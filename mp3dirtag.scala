@@ -33,12 +33,12 @@ object mp3 {
     val artist = options.getOrElse('artist, "-")
     val genre = options.getOrElse('genre, "-")
     
-    println("title: "+title+", album: "+album+" composer: "+composer)
+    println("title: "+title+", album: "+album+" composer: "+composer+" genre: "+genre+" artist: "+artist+" track: "+track)
     val tag: Tag = audioFile.getTagOrCreateAndSetDefault
     tag.setField(FieldKey.TITLE,title)
     tag.setField(FieldKey.ALBUM,album)
     tag.setField(FieldKey.COMPOSER,composer)
-    if (track != 0) {
+    if (track != -1) {
       tag.setField(FieldKey.TRACK,track.toString)
     }
     else {
@@ -80,7 +80,7 @@ object mp3 {
       files.zipWithIndex.foreach{ case (file,index) => writeTag (file, options, index) }
     }
     else {
-      files.foreach(x => writeTag(x, options, 0))
+      files.foreach(x => writeTag(x, options, -1))
     }
   }
 }
