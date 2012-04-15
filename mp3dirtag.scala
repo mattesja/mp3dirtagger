@@ -22,11 +22,12 @@ object mp3 {
     }
   }
 
-  def writeTag(audioFile: AudioFile, options: OptionMap, track: Int, level: Int) {
+  def writeTag(audioFile: AudioFile, options: OptionMap, track: Int) {
     val file = audioFile.getFile
     val fileName = file.getName
     val title = fileName.substring(0, fileName.length - 4)
-    val parentFile = getParentFile(file, level)
+    // if file is found in a deeper subdirectory structure
+    val parentFile = getParentFile(file, options.getOrElse('level, "0").toInt)
     val composer = parentFile.getParentFile.getName
     val album = composer.split(" ")(0)+" - "+parentFile.getName
     val artist = options.getOrElse('artist, "-")
@@ -65,6 +66,7 @@ object mp3 {
           case "-genre" :: value :: tail => nextOption(map ++ Map('genre -> value), tail)
           case "-artist" :: value :: tail => nextOption(map ++ Map('artist -> value), tail)
           case "-level" :: value :: tail => nextOption(map ++ Map('level -> value), tail)
+          case "-number-consecutively" :: tail => nextOption(map ++ Map('numberconsecutively -> "true"), tail)
           case string :: Nil =>  nextOption(map ++ Map('directory -> string), list.tail)
           case option :: tail => println("Unknown option '" + option + "'\n" + usage) 
                                  sys.exit(1) 
@@ -74,6 +76,11 @@ object mp3 {
 
     val files = getFiles(new File(options('directory)))
     println("Settings tags in "+files.size+" files in directory "+options('directory))
-    files.foreach(x => writeTag(x, options, 0, 0))
+    if (options.contains('numberconsecutively)) {
+      files.zipWithIndex.foreach{ case (file,index) => writeTag (file, options, index) }
+    }
+    else {
+      files.foreach(x => writeTag(x, options, 0))
+    }
   }
 }
