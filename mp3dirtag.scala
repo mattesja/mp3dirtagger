@@ -15,12 +15,20 @@ object mp3 {
     }
   }
 
-  def writeTag(audioFile: AudioFile, options: OptionMap) {
+  def getParentFile(file: File, level: Int): File = {
+    level match {
+      case n: Int if 0 < n => getParentFile(file.getParentFile, n-1)
+      case _ => file.getParentFile
+    }
+  }
+
+  def writeTag(audioFile: AudioFile, options: OptionMap, track: Int, level: Int) {
     val file = audioFile.getFile
     val fileName = file.getName
     val title = fileName.substring(0, fileName.length - 4)
-    val composer = file.getParentFile.getParentFile.getName
-    val album = composer.split(" ")(0)+" - "+file.getParentFile.getName
+    val parentFile = getParentFile(file, level)
+    val composer = parentFile.getParentFile.getName
+    val album = composer.split(" ")(0)+" - "+parentFile.getName
     val artist = options.getOrElse('artist, "-")
     val genre = options.getOrElse('genre, "-")
     
@@ -29,7 +37,12 @@ object mp3 {
     tag.setField(FieldKey.TITLE,title)
     tag.setField(FieldKey.ALBUM,album)
     tag.setField(FieldKey.COMPOSER,composer)
-    tag.setField(FieldKey.TRACK,title.substring(0,2))
+    if (track != 0) {
+      tag.setField(FieldKey.TRACK,track.toString)
+    }
+    else {
+      tag.setField(FieldKey.TRACK,title.substring(0,2))
+     }
     if (genre != "-") {
       tag.setField(FieldKey.GENRE,genre)
     }
@@ -51,6 +64,7 @@ object mp3 {
           case Nil => map
           case "-genre" :: value :: tail => nextOption(map ++ Map('genre -> value), tail)
           case "-artist" :: value :: tail => nextOption(map ++ Map('artist -> value), tail)
+          case "-level" :: value :: tail => nextOption(map ++ Map('level -> value), tail)
           case string :: Nil =>  nextOption(map ++ Map('directory -> string), list.tail)
           case option :: tail => println("Unknown option '" + option + "'\n" + usage) 
                                  sys.exit(1) 
@@ -60,6 +74,6 @@ object mp3 {
 
     val files = getFiles(new File(options('directory)))
     println("Settings tags in "+files.size+" files in directory "+options('directory))
-    files.foreach(x => writeTag(x, options))
+    files.foreach(x => writeTag(x, options, 0, 0))
   }
 }
